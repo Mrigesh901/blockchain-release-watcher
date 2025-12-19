@@ -1,0 +1,1 @@
+"""Blockchain Release Monitor Application."""
