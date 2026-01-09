@@ -58,6 +58,12 @@ class GitHubService:
             response.raise_for_status()
             return response.json()
             
+        except requests.exceptions.ConnectionError as e:
+            print(f"GitHub API connection error: {e}")
+            return None
+        except requests.exceptions.Timeout as e:
+            print(f"GitHub API timeout: {e}")
+            return None
         except requests.exceptions.RequestException as e:
             print(f"GitHub API request failed: {e}")
             return None
@@ -75,6 +81,46 @@ class GitHubService:
         # Match v1.2.3, 1.2.3, v1.2.3-beta, etc.
         pattern = r'^v?\d+\.\d+\.\d+.*$'
         return bool(re.match(pattern, tag_name))
+    
+    def _is_production_tag(self, tag_name: str) -> bool:
+        """
+        Check if tag is a production release (not a dev/test/feature tag).
+        
+        Args:
+            tag_name: Tag name to check.
+            
+        Returns:
+            True if tag appears to be a production release.
+        """
+        tag_lower = tag_name.lower()
+        
+        # Exclude common non-production suffixes
+        non_production_patterns = [
+            '-rc',           # release candidate
+            '-alpha',        # alpha release
+            '-beta',         # beta release
+            '-dev',          # development
+            '-test',         # test
+            '-snapshot',     # snapshot
+            '-nightly',      # nightly build
+            '-preview',      # preview
+            '-experimental', # experimental
+            '-fuji',         # testnet (Avalanche specific)
+            '-set-with',     # feature branch
+            '-randomize',    # feature branch
+            '-db-metrics',   # feature branch
+            '-antithesis',   # testing/CI specific
+            '-docker-image', # CI/build specific
+            '-backport',     # backport branch
+        ]
+        
+        # Check if tag contains any non-production pattern
+        for pattern in non_production_patterns:
+            if pattern in tag_lower:
+                return False
+        
+        # Tag appears to be production if it passes all checks
+        return True
     
     def _matches_tag_filter(self, tag_name: str, repo_name: str) -> bool:
         """
@@ -181,10 +227,12 @@ class GitHubService:
         data = self._make_request(url)
         
         if data and isinstance(data, list) and len(data) > 0:
-            # Find first semantic version tag that matches filter
+            # Find first production semantic version tag that matches filter
             for tag in data:
                 tag_name = tag.get("name", "")
-                if self._is_semantic_version(tag_name) and self._matches_tag_filter(tag_name, repo_name):
+                if (self._is_semantic_version(tag_name) and 
+                    self._is_production_tag(tag_name) and 
+                    self._matches_tag_filter(tag_name, repo_name)):
                     return {
                         "type": "tag",
                         "name": tag_name,

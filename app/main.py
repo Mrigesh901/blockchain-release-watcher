@@ -81,6 +81,7 @@ def create_app() -> Flask:
     
     def scheduled_check():
         """Scheduled repository check task."""
+        print("Scheduled check triggered")
         with app.app_context():
             check_all_repositories(
                 db, repo_service, gemini_service, 
