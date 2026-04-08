@@ -157,6 +157,22 @@ class GitLabService:
         if re.search(hash_pattern, tag_lower):
             return False
         
+        # Check for unrealistic major version numbers
+        clean_tag = tag_name.lstrip('v')
+        version_parts = clean_tag.split('.')[0].split('-')[0]
+        try:
+            major_version = int(version_parts)
+            # Major version > 1000 is likely a date-based or malformed tag
+            if major_version > 1000:
+                return False
+        except (ValueError, IndexError):
+            pass
+        
+        # Check for date-like patterns that might be malformed
+        date_pattern = r'^v?\d{4,5}\.\d{1,2}\.\d{1,2}'
+        if re.match(date_pattern, tag_name):
+            return False
+        
         return True
     
     def _normalize_version(self, version: str) -> str:

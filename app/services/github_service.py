@@ -135,6 +135,26 @@ class GitHubService:
         if re.search(hash_pattern, tag_lower):
             return False
         
+        # Check for unrealistic major version numbers
+        # Parse the version to check if major version is suspiciously high
+        clean_tag = tag_name.lstrip('v')
+        version_parts = clean_tag.split('.')[0].split('-')[0]
+        try:
+            major_version = int(version_parts)
+            # Major version > 1000 is likely a date-based or malformed tag
+            # (e.g., v20201.01.02, v2020.01.02)
+            if major_version > 1000:
+                return False
+        except (ValueError, IndexError):
+            # If we can't parse it, let other checks handle it
+            pass
+        
+        # Check for date-like patterns that might be malformed
+        # Pattern: 4-5 digits at start (likely a year or malformed date)
+        date_pattern = r'^v?\d{4,5}\.\d{1,2}\.\d{1,2}'
+        if re.match(date_pattern, tag_name):
+            return False
+        
         # Tag appears to be production if it passes all checks
         return True
     

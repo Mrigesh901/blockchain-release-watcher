@@ -79,6 +79,12 @@ def test_problematic_tags():
         "v1.2.0-dev",
         "v1.0.0-a1b2c3d",
         "v0.9.6-1234567890",
+        # Date-based and malformed versions
+        "v20201.01.02",
+        "v2020.01.02",
+        "v2021.12.31",
+        "20201.01.02",
+        "v12345.1.0",
     ]
     
     # Tags that should PASS THROUGH (production)
@@ -89,6 +95,7 @@ def test_problematic_tags():
         "v1.14.0",
         "v2.0.0",
         "1.5.3",
+        "v999.99.99",  # High but reasonable version
     ]
     
     print("\nNon-production tags (should be FILTERED):")
@@ -178,6 +185,20 @@ def test_update_detection_scenario():
             "latest": "v1.17.2-1765930431",
             "should_alert": False,
             "reason": "Timestamp tags should be filtered out"
+        },
+        {
+            "name": "Date-based tag: v1.4.3 vs v20201.01.02",
+            "last": "v1.4.3",
+            "latest": "v20201.01.02",
+            "should_alert": False,
+            "reason": "Date-based tags should be filtered out"
+        },
+        {
+            "name": "Date-based tag reverse: v20201.01.02 vs v1.4.3",
+            "last": "v20201.01.02",
+            "latest": "v1.4.3",
+            "should_alert": False,
+            "reason": "Date-based tags should be filtered out"
         },
     ]
     
