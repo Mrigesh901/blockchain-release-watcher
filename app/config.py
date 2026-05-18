@@ -38,6 +38,14 @@ class Config:
     # Slack Configuration
     SLACK_WEBHOOK_URL: str = os.getenv("SLACK_WEBHOOK_URL", "")
     SLACK_ALERTS_ENABLED: bool = os.getenv("SLACK_ALERTS_ENABLED", "true").lower() == "true"
+
+    # Jira Configuration
+    JIRA_BASE_URL: str = os.getenv("JIRA_BASE_URL", "https://zeeve.atlassian.net")
+    JIRA_USER_EMAIL: str = os.getenv("JIRA_USER_EMAIL", "")
+    JIRA_API_TOKEN: str = os.getenv("JIRA_API_TOKEN", "")
+    JIRA_PROJECT_KEY: str = os.getenv("JIRA_PROJECT_KEY", "BRW")
+    JIRA_ISSUE_TYPE: str = os.getenv("JIRA_ISSUE_TYPE", "Task")
+    JIRA_ALERTS_ENABLED: bool = os.getenv("JIRA_ALERTS_ENABLED", "true").lower() == "true"
     
     # Flask Configuration
     FLASK_HOST: str = os.getenv("FLASK_HOST", "0.0.0.0")

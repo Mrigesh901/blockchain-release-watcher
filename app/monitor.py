@@ -1,31 +1,35 @@
 """
 Monitoring logic for checking repository updates.
 """
-from typing import Dict, Any
+from typing import Dict, Any, Optional
 
 from app.db.database import Database
 from app.services.repository_service import RepositoryService
 from app.services.gemini_service import GeminiService
 from app.services.email_service import EmailService
 from app.services.slack_service import SlackService
+from app.services.jira_service import JiraService
 from app.config import Config
 
 
-def check_repository_updates(repo_name: str, db: Database, 
+def check_repository_updates(repo_name: str, db: Database,
                             repo_service: RepositoryService,
                             gemini_service: GeminiService,
                             email_service: EmailService,
-                            slack_service: SlackService) -> Dict[str, Any]:
+                            slack_service: SlackService,
+                            jira_service: Optional[JiraService] = None) -> Dict[str, Any]:
     """
     Check for updates in a single repository.
-    
+
     Args:
         repo_name: Repository name (owner/repo).
         db: Database instance.
-        github_service: Repository service instance.
+        repo_service: Repository service instance.
         gemini_service: Gemini service instance.
         email_service: Email service instance.
-        
+        slack_service: Slack service instance.
+        jira_service: Optional Jira service instance.
+
     Returns:
         Result dictionary with update information.
     """
@@ -116,9 +120,11 @@ def check_repository_updates(repo_name: str, db: Database,
         
         if should_alert:
             print(f"  Sending alerts...")
-            
-            alerts_sent = {"email": False, "slack": False}
-            
+
+            alerts_sent = {"email": False, "slack": False, "jira": False}
+            jira_issue_key: Optional[str] = None
+            jira_issue_url: Optional[str] = None
+
             # Send email alert if enabled
             if Config.EMAIL_ALERTS_ENABLED:
                 print(f"    Sending email alert...")
@@ -132,7 +138,7 @@ def check_repository_updates(repo_name: str, db: Database,
                 alerts_sent["email"] = email_sent
             else:
                 print(f"    Email alerts disabled")
-            
+
             # Send Slack alert if enabled
             if Config.SLACK_ALERTS_ENABLED and slack_service.enabled:
                 print(f"    Sending Slack alert...")
@@ -146,9 +152,27 @@ def check_repository_updates(repo_name: str, db: Database,
                 alerts_sent["slack"] = slack_sent
             elif not Config.SLACK_ALERTS_ENABLED:
                 print(f"    Slack alerts disabled")
-            
+
+            # Create Jira ticket if enabled
+            if Config.JIRA_ALERTS_ENABLED and jira_service and jira_service.enabled:
+                print(f"    Creating Jira ticket...")
+                jira_result = jira_service.create_upgrade_ticket(
+                    repo_name=repo_name,
+                    old_version=old_version,
+                    new_version=new_version,
+                    analysis=analysis,
+                    repo_url=repo_url
+                )
+                alerts_sent["jira"] = jira_result["success"]
+                jira_issue_key = jira_result.get("issue_key")
+                jira_issue_url = jira_result.get("issue_url")
+                if jira_result.get("assigned_to"):
+                    print(f"    Jira ticket assigned to: {jira_result['assigned_to']}")
+            elif not Config.JIRA_ALERTS_ENABLED:
+                print(f"    Jira alerts disabled")
+
             # Update last alerted version if at least one alert was sent
-            if alerts_sent["email"] or alerts_sent["slack"]:
+            if alerts_sent["email"] or alerts_sent["slack"] or alerts_sent["jira"]:
                 db.upsert_repository(
                     repo_name,
                     repo_url,
@@ -165,7 +189,7 @@ def check_repository_updates(repo_name: str, db: Database,
                 )
                 
                 print(f"  ✓ Alert sent successfully")
-                
+
                 return {
                     "repo_name": repo_name,
                     "status": "alert_sent",
@@ -175,6 +199,9 @@ def check_repository_updates(repo_name: str, db: Database,
                     "mandatory_upgrade": mandatory,
                     "email_sent": alerts_sent["email"],
                     "slack_sent": alerts_sent["slack"],
+                    "jira_sent": alerts_sent["jira"],
+                    "jira_issue_key": jira_issue_key,
+                    "jira_issue_url": jira_issue_url,
                     "summary": analysis.get("summary")
                 }
             else:
@@ -207,20 +234,22 @@ def check_repository_updates(repo_name: str, db: Database,
 
 
 def check_all_repositories(db: Database, repo_service: RepositoryService,
-                          gemini_service: GeminiService, 
+                          gemini_service: GeminiService,
                           email_service: EmailService,
                           slack_service: SlackService,
-                          repo_list: list) -> None:
+                          repo_list: list,
+                          jira_service: Optional[JiraService] = None) -> None:
     """
     Check all monitored repositories for updates.
-    
+
     Args:
         db: Database instance.
-        github_service: Repository service instance.
+        repo_service: Repository service instance.
         gemini_service: Gemini service instance.
         email_service: Email service instance.
         slack_service: Slack service instance.
         repo_list: List of repository names to check.
+        jira_service: Optional Jira service instance.
     """
     print(f"\n{'='*60}")
     print(f"Starting repository check for {len(repo_list)} repositories")
@@ -230,7 +259,8 @@ def check_all_repositories(db: Database, repo_service: RepositoryService,
     
     for repo_name in repo_list:
         result = check_repository_updates(
-            repo_name, db, repo_service, gemini_service, email_service, slack_service
+            repo_name, db, repo_service, gemini_service,
+            email_service, slack_service, jira_service
         )
         results.append(result)
     
@@ -238,13 +268,15 @@ def check_all_repositories(db: Database, repo_service: RepositoryService,
     print(f"\n{'='*60}")
     print("Check Summary:")
     print(f"{'='*60}")
-    
+
     alerts_sent = sum(1 for r in results if r.get("status") == "alert_sent")
     errors = sum(1 for r in results if r.get("status") == "error")
     no_updates = sum(1 for r in results if r.get("status") == "no_update")
-    
+    jira_tickets = sum(1 for r in results if r.get("jira_sent"))
+
     print(f"  Total repositories: {len(results)}")
     print(f"  Alerts sent: {alerts_sent}")
+    print(f"  Jira tickets created: {jira_tickets}")
     print(f"  No updates: {no_updates}")
     print(f"  Errors: {errors}")
     print(f"{'='*60}\n")

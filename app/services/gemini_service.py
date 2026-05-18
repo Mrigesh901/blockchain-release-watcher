@@ -73,9 +73,9 @@ NEW VERSION: {new_version}
 }
 
 CRITICAL SEVERITY means: security vulnerabilities, hard forks, network-breaking changes, or consensus failures.
-HIGH SEVERITY means: important bug fixes, performance issues, or features affecting network stability.
-MEDIUM SEVERITY means: minor bug fixes, optimizations, or new non-critical features.
-LOW SEVERITY means: documentation, refactoring, or cosmetic changes.
+HIGH SEVERITY means: any new features, API changes, new dataset support, new chain/network support, new protocol support, performance improvements, or important bug fixes. When in doubt about a functional release, use HIGH.
+MEDIUM SEVERITY means: minor bug fixes, dependency bumps, or small internal optimizations with no user-facing impact.
+LOW SEVERITY means: documentation, refactoring, CI/CD changes, or purely cosmetic changes.
 
 MANDATORY UPGRADE is true only if:
 - Security vulnerability is fixed
@@ -225,9 +225,9 @@ Respond ONLY with valid JSON. No markdown, no extra text, just the JSON object."
         Returns:
             True if alert should be sent.
         """
-        # Send alert if mandatory upgrade OR severity is HIGH or CRITICAL
+        # Send alert if mandatory upgrade OR severity is MEDIUM, HIGH, or CRITICAL
         if analysis.get("mandatory_upgrade"):
             return True
         
         severity = analysis.get("severity", "MEDIUM")
-        return severity in ["HIGH", "CRITICAL"]
+        return severity in ["MEDIUM", "HIGH", "CRITICAL"]
