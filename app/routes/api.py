@@ -11,6 +11,7 @@ from app.services.repository_service import RepositoryService
 from app.services.gemini_service import GeminiService
 from app.services.email_service import EmailService
 from app.services.slack_service import SlackService
+from app.services.jira_service import JiraService
 
 
 # Create blueprint
@@ -22,26 +23,30 @@ repo_service: RepositoryService = None
 gemini_service: GeminiService = None
 email_service: EmailService = None
 slack_service: SlackService = None
+jira_service: JiraService = None
 
 
-def init_routes(database: Database, repo: RepositoryService, 
-               gemini: GeminiService, email: EmailService, slack: SlackService):
+def init_routes(database: Database, repo: RepositoryService,
+               gemini: GeminiService, email: EmailService,
+               slack: SlackService, jira: JiraService = None):
     """
     Initialize routes with service dependencies.
-    
+
     Args:
         database: Database instance.
-        github: GitHub service instance.
+        repo: Repository service instance.
         gemini: Gemini service instance.
         email: Email service instance.
         slack: Slack service instance.
+        jira: Jira service instance.
     """
-    global db, repo_service, gemini_service, email_service, slack_service
+    global db, repo_service, gemini_service, email_service, slack_service, jira_service
     db = database
     repo_service = repo
     gemini_service = gemini
     email_service = email
     slack_service = slack
+    jira_service = jira
 
 
 @api_bp.route("/health", methods=["GET"])
@@ -151,9 +156,10 @@ def check_repository(repo_name: str) -> Dict[str, Any]:
     """
     try:
         from app.monitor import check_repository_updates
-        
+
         result = check_repository_updates(
-            repo_name, db, repo_service, gemini_service, email_service, slack_service
+            repo_name, db, repo_service, gemini_service,
+            email_service, slack_service, jira_service
         )
         
         return jsonify({

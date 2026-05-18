@@ -1,0 +1,14 @@
+{
+  "_comment": "Maps repository names to protocol owners for Jira ticket assignment. Keys must match MONITORED_REPOS entries exactly (including 'gitlab:' prefix if applicable).",
+  "ethereum-optimism/optimism": {
+    "protocol_name": "Optimism",
+    "owner_email": "mrigesh.patni@zeeve.io",
+    "team": "layer2"
+  },
+ 
+  "paritytech/polkadot": {
+    "protocol_name": "Polkadot",
+    "owner_email": "mrigesh.patni@zeeve.io",
+    "team": "polkadot"
+  }
+}

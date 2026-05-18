@@ -30,6 +30,35 @@ Welcome to the Blockchain Release Monitor documentation!
   - Technology choices
   - Code structure
 
+## 🚢 Deployment Documentation
+
+- **[DEPLOYMENT_OPTIONS.md](DEPLOYMENT_OPTIONS.md)** - Overview of all deployment methods
+  - Docker Compose (local)
+  - Kubernetes with Helm (recommended)
+  - Kubernetes with kubectl
+  - Standalone Python
+  - GHCR setup guide
+
+- **[KUBERNETES_DEPLOYMENT.md](KUBERNETES_DEPLOYMENT.md)** - Comprehensive Kubernetes guide
+  - Prerequisites and setup
+  - Helm deployment (quick start)
+  - Manual kubectl deployment
+  - GHCR configuration
+  - Monitoring and troubleshooting
+  - Production best practices
+  - Backup and recovery
+
+- **[k8s/README.md](../k8s/README.md)** - kubectl quick reference
+  - Common commands
+  - Troubleshooting steps
+  - Quick deployment guide
+
+- **[helm/blockchain-release-monitor/README.md](../helm/blockchain-release-monitor/README.md)** - Helm chart guide
+  - Installation examples
+  - Values file configurations
+  - Management commands
+  - Production setups
+
 ## 📝 Examples
 
 - **[examples/email_examples.py](examples/email_examples.py)** - Sample alert emails
@@ -73,7 +102,9 @@ Welcome to the Blockchain Release Monitor documentation!
 - **Get started quickly** → [QUICKSTART.md](QUICKSTART.md)
 - **Understand how it works** → [README.md](README.md)
 - **See all features** → [PROJECT_SUMMARY.md](PROJECT_SUMMARY.md)
-- **Deploy to production** → [SETUP.md](SETUP.md) (Deployment section)
+- **Deploy to production** → [DEPLOYMENT_OPTIONS.md](DEPLOYMENT_OPTIONS.md)
+- **Deploy to Kubernetes** → [KUBERNETES_DEPLOYMENT.md](KUBERNETES_DEPLOYMENT.md)
+- **Use Helm** → [helm/README.md](../helm/blockchain-release-monitor/README.md)
 - **Fix an error** → [TROUBLESHOOTING.md](TROUBLESHOOTING.md)
 - **See email examples** → [examples/email_examples.py](examples/email_examples.py)
 - **Test my config** → Run `python test_config.py`
@@ -84,6 +115,8 @@ Welcome to the Blockchain Release Monitor documentation!
 
 **For System Administrators:**
 - [QUICKSTART.md](QUICKSTART.md) - Quick setup
+- [DEPLOYMENT_OPTIONS.md](DEPLOYMENT_OPTIONS.md) - All deployment methods
+- [KUBERNETES_DEPLOYMENT.md](KUBERNETES_DEPLOYMENT.md) - K8s deployment
 - [SETUP.md](SETUP.md) - Deployment options
 - [TROUBLESHOOTING.md](TROUBLESHOOTING.md) - Issue resolution
 

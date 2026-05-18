@@ -12,6 +12,7 @@ from app.services.repository_service import RepositoryService
 from app.services.gemini_service import GeminiService
 from app.services.email_service import EmailService
 from app.services.slack_service import SlackService
+from app.services.jira_service import JiraService
 from app.routes.api import api_bp, init_routes
 from app.monitor import check_all_repositories
 
@@ -41,7 +42,8 @@ def create_app() -> Flask:
     gemini_service = GeminiService()
     email_service = EmailService()
     slack_service = SlackService()
-    
+    jira_service = JiraService()
+
     print("✓ Database initialized")
     print("✓ Repository service initialized (GitHub + GitLab)")
     if tag_filters:
@@ -60,6 +62,13 @@ def create_app() -> Flask:
         print("⚠ Slack alerts enabled but webhook URL not configured")
     else:
         print("✓ Slack service initialized (disabled)")
+
+    if jira_service.enabled and Config.JIRA_ALERTS_ENABLED:
+        print(f"✓ Jira service initialized (enabled) — project: {Config.JIRA_PROJECT_KEY}")
+    elif Config.JIRA_ALERTS_ENABLED:
+        print("⚠ Jira alerts enabled but credentials not fully configured")
+    else:
+        print("✓ Jira service initialized (disabled)")
     
     # Initialize monitored repositories in database
     print("\nInitializing monitored repositories:")
@@ -73,7 +82,7 @@ def create_app() -> Flask:
     app = Flask(__name__)
     
     # Initialize routes with services
-    init_routes(db, repo_service, gemini_service, email_service, slack_service)
+    init_routes(db, repo_service, gemini_service, email_service, slack_service, jira_service)
     app.register_blueprint(api_bp)
     
     # Setup scheduler for periodic checks
@@ -84,8 +93,9 @@ def create_app() -> Flask:
         print("Scheduled check triggered")
         with app.app_context():
             check_all_repositories(
-                db, repo_service, gemini_service, 
-                email_service, slack_service, Config.MONITORED_REPOS
+                db, repo_service, gemini_service,
+                email_service, slack_service, Config.MONITORED_REPOS,
+                jira_service
             )
     
     # Schedule periodic checks
