@@ -214,7 +214,24 @@ class GitLabService:
             patch = int(version_numbers[2]) if len(version_numbers) > 2 else 0
             return (major, minor, patch, suffix)
         except (ValueError, IndexError):
-            return (0, 0, 0, clean_version)
+            pass
+        
+        # Standard parsing failed (e.g., "octez-v25.0-rc1", "octez-evm-node-v0.59", "op-node/v1.18.1").
+        # Extract the embedded version number after a "-v" or "/v" separator.
+        match = re.search(r'[/-]v(\d[\d.]*)(.*)', clean_version)
+        if match:
+            emb_version_str = match.group(1)           # "25.0", "0.59", "20260518"
+            emb_suffix = match.group(2).lstrip('-')    # "rc1", "", ""
+            try:
+                emb_numbers = emb_version_str.split('.')
+                major = int(emb_numbers[0])
+                minor = int(emb_numbers[1]) if len(emb_numbers) > 1 else 0
+                patch = int(emb_numbers[2]) if len(emb_numbers) > 2 else 0
+                return (major, minor, patch, emb_suffix)
+            except (ValueError, IndexError):
+                pass
+        
+        return (0, 0, 0, clean_version)
     
     def _compare_versions(self, version1: str, version2: str) -> int:
         """
@@ -249,6 +266,20 @@ class GitLabService:
             return 1
         elif suffix1 and not suffix2:
             return -1
+        elif suffix1 and suffix2:
+            # Natural sort: split on digit boundaries so rc.10 > rc.9, 1765930433 > 1765930431
+            def _nat_cmp(a, b):
+                ta = [int(c) if c.isdigit() else c.lower() for c in re.split(r'(\d+)', a) if c]
+                tb = [int(c) if c.isdigit() else c.lower() for c in re.split(r'(\d+)', b) if c]
+                for x, y in zip(ta, tb):
+                    if type(x) != type(y):
+                        x, y = str(x), str(y)
+                    if x < y: return -1
+                    if x > y: return 1
+                return (len(ta) > len(tb)) - (len(ta) < len(tb))
+            cmp = _nat_cmp(suffix1, suffix2)
+            if cmp != 0:
+                return cmp
         
         return 0
     
