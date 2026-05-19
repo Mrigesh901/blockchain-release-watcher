@@ -1,0 +1,13 @@
+{
+  "_comment": "Maps repository names to protocol owners for Jira ticket assignment. Keys must match MONITORED_REPOS entries exactly (including 'gitlab:' prefix if applicable).",
+  "babylonlabs-io/babylon": {
+    "protocol_name": "Babylon",
+    "owner_email": "mrigesh.patni@zeeve.io",
+    "team": "mrigesh"
+  },
+  "tempoxyz/tempo": {
+    "protocol_name": "Tempo",
+    "owner_email": "mrigesh.patni@zeeve.io",
+    "team": "mrigesh"
+  }
+}

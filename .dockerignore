@@ -142,3 +142,5 @@ Thumbs.db
 # Local test scripts
 test_local.py
 scratch.py
+
+config/protocol_owners.json
