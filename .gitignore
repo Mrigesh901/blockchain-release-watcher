@@ -63,3 +63,5 @@ k8s/
 K8S_DEPLOYMENT_SUMMARY.md
 
 tests/
+
+config/protocol_owners.json

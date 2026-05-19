@@ -252,18 +252,19 @@ class GitLabService:
         
         return 0
     
-    def get_latest_release(self, group: str, project: str) -> Optional[Dict[str, Any]]:
+    def get_latest_release(self, group: str, project: str, filter_key: str = None) -> Optional[Dict[str, Any]]:
         """
         Get latest release from GitLab project.
         
         Args:
             group: Project group/namespace.
             project: Project name.
+            filter_key: Key to use for tag filter lookup (defaults to group/project).
             
         Returns:
             Release data or None if no releases exist.
         """
-        repo_name = f"{group}/{project}"
+        repo_name = filter_key or f"{group}/{project}"
         project_id = quote(f"{group}/{project}", safe='')
         
         # If tag filters exist for this repo, get all releases and filter
@@ -302,18 +303,19 @@ class GitLabService:
         
         return None
     
-    def get_latest_tag(self, group: str, project: str) -> Optional[Dict[str, Any]]:
+    def get_latest_tag(self, group: str, project: str, filter_key: str = None) -> Optional[Dict[str, Any]]:
         """
         Get latest semantic version tag from repository.
         
         Args:
             group: Project group/namespace.
             project: Project name.
+            filter_key: Key to use for tag filter lookup (defaults to group/project).
             
         Returns:
             Tag data or None if no tags exist.
         """
-        repo_name = f"{group}/{project}"
+        repo_name = filter_key or f"{group}/{project}"
         project_id = quote(f"{group}/{project}", safe='')
         url = f"{self.base_url}/projects/{project_id}/repository/tags"
         data = self._make_request(url)
@@ -335,24 +337,25 @@ class GitLabService:
         
         return None
     
-    def get_latest_version(self, group: str, project: str) -> Optional[Dict[str, Any]]:
+    def get_latest_version(self, group: str, project: str, filter_key: str = None) -> Optional[Dict[str, Any]]:
         """
         Get latest version - prioritize releases, fall back to tags.
         
         Args:
             group: Project group/namespace.
             project: Project name.
+            filter_key: Key to use for tag filter lookup (e.g., 'tezos/tezos#octez').
             
         Returns:
             Version data (release or tag) or None.
         """
         # Try to get latest release first
-        release = self.get_latest_release(group, project)
+        release = self.get_latest_release(group, project, filter_key=filter_key)
         if release:
             return release
         
         # Fall back to tags
-        tag = self.get_latest_tag(group, project)
+        tag = self.get_latest_tag(group, project, filter_key=filter_key)
         return tag
     
     def compare_commits(self, group: str, project: str, 
@@ -415,12 +418,14 @@ class GitLabService:
         Parse repository name into group and project.
         
         Args:
-            repo_name: Repository name in format 'group/project'.
+            repo_name: Repository name in format 'group/project' or 'group/project#alias'.
             
         Returns:
             Tuple of (group, project).
         """
-        parts = repo_name.split("/", 1)
+        # Strip component alias (e.g., "tezos/tezos#octez" -> "tezos/tezos")
+        clean = repo_name.split('#', 1)[0]
+        parts = clean.split("/", 1)
         if len(parts) != 2:
             raise ValueError(f"Invalid repository name format: {repo_name}")
         
@@ -440,8 +445,8 @@ class GitLabService:
         """
         group, project = self.parse_repo_name(repo_name)
         
-        # Get latest version
-        latest = self.get_latest_version(group, project)
+        # Get latest version, passing full repo_name (with #alias) as filter_key
+        latest = self.get_latest_version(group, project, filter_key=repo_name)
         
         if not latest:
             return {

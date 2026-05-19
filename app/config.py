@@ -110,8 +110,9 @@ class Config:
         
         if has_github_repos and not cls.GITHUB_TOKEN:
             missing.append("GITHUB_TOKEN (required for GitHub repositories)")
+        # GITLAB_TOKEN is optional for public GitLab repositories (e.g., gitlab.com/tezos/tezos)
         if has_gitlab_repos and not cls.GITLAB_TOKEN:
-            missing.append("GITLAB_TOKEN (required for GitLab repositories)")
+            print("Note: GITLAB_TOKEN not set - public GitLab repos will still be monitored")
         
         if not cls.GEMINI_API_KEY:
             missing.append("GEMINI_API_KEY")
