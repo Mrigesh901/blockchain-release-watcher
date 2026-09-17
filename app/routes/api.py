@@ -2,8 +2,11 @@
 Flask API routes and webhook handler.
 Provides REST endpoints for monitoring and GitHub webhook integration.
 """
+import hashlib
+import hmac
+from functools import wraps
 from flask import Blueprint, jsonify, request
-from typing import Dict, Any
+from typing import Callable, Dict, Any
 
 from app.db.database import Database
 from app.config import Config
@@ -24,6 +27,48 @@ gemini_service: GeminiService = None
 email_service: EmailService = None
 slack_service: SlackService = None
 jira_service: JiraService = None
+
+
+def _error_response(message: str, status_code: int):
+    return jsonify({"success": False, "error": message}), status_code
+
+
+def require_api_auth(route_handler: Callable):
+    @wraps(route_handler)
+    def wrapper(*args, **kwargs):
+        if not Config.AUTH_REQUIRED:
+            return route_handler(*args, **kwargs)
+
+        if not Config.API_AUTH_TOKEN:
+            return _error_response("API authentication is not configured", 503)
+
+        auth_header = request.headers.get("Authorization", "")
+        expected_header = f"Bearer {Config.API_AUTH_TOKEN}"
+        api_key = request.headers.get("X-API-Key", "")
+
+        if hmac.compare_digest(auth_header, expected_header) or hmac.compare_digest(api_key, Config.API_AUTH_TOKEN):
+            return route_handler(*args, **kwargs)
+
+        return _error_response("Unauthorized", 401)
+
+    return wrapper
+
+
+def verify_github_signature() -> bool:
+    if not Config.GITHUB_WEBHOOK_SECRET:
+        return True
+
+    signature = request.headers.get("X-Hub-Signature-256", "")
+    if not signature.startswith("sha256="):
+        return False
+
+    digest = hmac.new(
+        Config.GITHUB_WEBHOOK_SECRET.encode("utf-8"),
+        request.get_data(),
+        hashlib.sha256
+    ).hexdigest()
+
+    return hmac.compare_digest(signature, f"sha256={digest}")
 
 
 def init_routes(database: Database, repo: RepositoryService,
@@ -65,6 +110,7 @@ def health_check() -> Dict[str, Any]:
 
 
 @api_bp.route("/repos", methods=["GET"])
+@require_api_auth
 def get_repositories() -> Dict[str, Any]:
     """
     Get all monitored repositories.
@@ -97,11 +143,12 @@ def get_repositories() -> Dict[str, Any]:
     except Exception as e:
         return jsonify({
             "success": False,
-            "error": str(e)
+            "error": "Internal server error"
         }), 500
 
 
 @api_bp.route("/repos/<path:repo_name>", methods=["GET"])
+@require_api_auth
 def get_repository(repo_name: str) -> Dict[str, Any]:
     """
     Get specific repository details.
@@ -139,11 +186,12 @@ def get_repository(repo_name: str) -> Dict[str, Any]:
     except Exception as e:
         return jsonify({
             "success": False,
-            "error": str(e)
+            "error": "Internal server error"
         }), 500
 
 
 @api_bp.route("/repos/<path:repo_name>/check", methods=["POST"])
+@require_api_auth
 def check_repository(repo_name: str) -> Dict[str, Any]:
     """
     Manually trigger check for specific repository.
@@ -170,11 +218,12 @@ def check_repository(repo_name: str) -> Dict[str, Any]:
     except Exception as e:
         return jsonify({
             "success": False,
-            "error": str(e)
+            "error": "Internal server error"
         }), 500
 
 
 @api_bp.route("/alerts", methods=["GET"])
+@require_api_auth
 def get_alerts() -> Dict[str, Any]:
     """
     Get alert history.
@@ -210,7 +259,7 @@ def get_alerts() -> Dict[str, Any]:
     except Exception as e:
         return jsonify({
             "success": False,
-            "error": str(e)
+            "error": "Internal server error"
         }), 500
 
 
@@ -227,9 +276,12 @@ def github_webhook() -> Dict[str, Any]:
         Webhook processing result.
     """
     try:
+        if not verify_github_signature():
+            return _error_response("Invalid webhook signature", 401)
+
         # Get webhook event type
         event_type = request.headers.get("X-GitHub-Event")
-        payload = request.json
+        payload = request.get_json(silent=True)
         
         if not payload:
             return jsonify({
@@ -265,7 +317,7 @@ def github_webhook() -> Dict[str, Any]:
                     
                     result = check_repository_updates(
                         repo_full_name, db, repo_service, 
-                        gemini_service, email_service, slack_service
+                        gemini_service, email_service, slack_service, jira_service
                     )
                     
                     return jsonify({
@@ -283,7 +335,7 @@ def github_webhook() -> Dict[str, Any]:
                 
                 result = check_repository_updates(
                     repo_full_name, db, repo_service, 
-                    gemini_service, email_service, slack_service
+                    gemini_service, email_service, slack_service, jira_service
                 )
                 
                 return jsonify({
@@ -302,11 +354,12 @@ def github_webhook() -> Dict[str, Any]:
     except Exception as e:
         return jsonify({
             "success": False,
-            "error": str(e)
+            "error": "Internal server error"
         }), 500
 
 
 @api_bp.route("/test/email", methods=["POST"])
+@require_api_auth
 def test_email() -> Dict[str, Any]:
     """
     Send test email to verify configuration.
@@ -325,11 +378,12 @@ def test_email() -> Dict[str, Any]:
     except Exception as e:
         return jsonify({
             "success": False,
-            "error": str(e)
+            "error": "Internal server error"
         }), 500
 
 
 @api_bp.route("/test/slack", methods=["POST"])
+@require_api_auth
 def test_slack() -> Dict[str, Any]:
     """
     Send test Slack message to verify configuration.
@@ -349,5 +403,5 @@ def test_slack() -> Dict[str, Any]:
     except Exception as e:
         return jsonify({
             "success": False,
-            "error": str(e)
+            "error": "Internal server error"
         }), 500

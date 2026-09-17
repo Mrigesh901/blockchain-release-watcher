@@ -16,6 +16,7 @@ class Config:
     # GitHub Configuration
     GITHUB_TOKEN: str = os.getenv("GITHUB_TOKEN", "")
     GITHUB_API_BASE: str = "https://api.github.com"
+    GITHUB_WEBHOOK_SECRET: str = os.getenv("GITHUB_WEBHOOK_SECRET", "")
     
     # GitLab Configuration
     GITLAB_TOKEN: str = os.getenv("GITLAB_TOKEN", "")
@@ -47,6 +48,10 @@ class Config:
     JIRA_ISSUE_TYPE: str = os.getenv("JIRA_ISSUE_TYPE", "Task")
     JIRA_ALERTS_ENABLED: bool = os.getenv("JIRA_ALERTS_ENABLED", "true").lower() == "true"
     
+    # API Security Configuration
+    API_AUTH_TOKEN: str = os.getenv("API_AUTH_TOKEN", "")
+    AUTH_REQUIRED: bool = os.getenv("AUTH_REQUIRED", "true").lower() == "true"
+
     # Flask Configuration
     FLASK_HOST: str = os.getenv("FLASK_HOST", "0.0.0.0")
     FLASK_PORT: int = int(os.getenv("FLASK_PORT", "5000"))
@@ -116,6 +121,9 @@ class Config:
         
         if not cls.GEMINI_API_KEY:
             missing.append("GEMINI_API_KEY")
+
+        if cls.AUTH_REQUIRED and not cls.API_AUTH_TOKEN:
+            missing.append("API_AUTH_TOKEN")
         
         # Check if at least one notification method is configured
         email_configured = (cls.SMTP_USERNAME and cls.SMTP_PASSWORD and 

@@ -1,0 +1,12 @@
+1. Check the deployment:
+   kubectl get pods -l app.kubernetes.io/instance={{ .Release.Name }}
+
+2. Port-forward the service:
+   kubectl port-forward svc/{{ include "blockchain-release-watcher.fullname" . }} 5000:{{ .Values.service.port }}
+
+3. Check health:
+   curl http://127.0.0.1:5000/health
+
+Security note:
+Use an externally managed Kubernetes Secret for production credentials and set secret.existingSecret.
+Keep replicaCount at 1 while the app uses SQLite and an in-process scheduler.

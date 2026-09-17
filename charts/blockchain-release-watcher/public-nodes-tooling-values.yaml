@@ -1,0 +1,51 @@
+replicaCount: 1
+
+image:
+  repository: ghcr.io/mrigesh901/blockchain-release-watcher
+  tag: "sha-ec41faa"
+  pullPolicy: IfNotPresent
+
+secret:
+  create: false
+  existingSecret: blockchain-release-watcher-secrets
+  envFrom: true
+  optional: false
+
+config:
+  flaskHost: "0.0.0.0"
+  flaskPort: "5000"
+  databasePath: "/app/data/blockchain_monitor.db"
+  checkIntervalMinutes: "1"
+  gitlabApiBase: "https://gitlab.com/api/v4"
+  smtpHost: "smtp.gmail.com"
+  smtpPort: "587"
+  emailAlertsEnabled: "true"
+  slackAlertsEnabled: "true"
+  jiraBaseUrl: "https://zeeve.atlassian.net"
+  jiraProjectKey: "BRW"
+  jiraIssueType: "Task"
+  jiraAlertsEnabled: "true"
+  authRequired: "true"
+  monitoredRepos: "babylonlabs-io/babylon,InjectiveFoundation/injective-core,base/node,ethereum-optimism/optimism,subsquid/worker-rs,near/nearcore,0xPolygon/bor,0xPolygon/heimdall-v2,ethereum/go-ethereum,NethermindEth/nethermind,erigontech/erigon,sigp/lighthouse,bnb-chain/bsc,ava-labs/avalanchego,node-real/bsc-erigon,stellar/stellar-rpc,thetatoken/theta-protocol-ledger,skalenetwork/validator-cli,skalenetwork/sgxwallet,skalenetwork/node-cli,0xPolygon/erigon,OffchainLabs/nitro,CoreumFoundation/coreum,anza-xyz/agave,jito-foundation/jito-solana,flashbots/mev-boost,tokenize-x/tx-chain,tempoxyz/tempo,circlefin/arc-node,gitlab:tezos/tezos#octez,gitlab:tezos/tezos#evm-node,gitlab:tezos/tezos#smart-rollup"
+  repoTagFilters: "ethereum-optimism/optimism:op-geth,op-node;tezos/tezos#octez:octez-v;tezos/tezos#evm-node:octez-evm-node;tezos/tezos#smart-rollup:octez-smart-rollup-node"
+
+persistence:
+  enabled: true
+  size: 1Gi
+
+ingress:
+  enabled: false
+
+podDisruptionBudget:
+  enabled: false
+
+networkPolicy:
+  enabled: false
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 256Mi
+  limits:
+    cpu: 500m
+    memory: 512Mi

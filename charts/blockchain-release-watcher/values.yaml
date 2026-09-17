@@ -1,0 +1,148 @@
+replicaCount: 1
+
+image:
+  repository: ghcr.io/mrigesh901/blockchain-release-watcher
+  pullPolicy: IfNotPresent
+  tag: ""
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+serviceAccount:
+  create: true
+  automountServiceAccountToken: false
+  annotations: {}
+  name: ""
+
+podAnnotations: {}
+podLabels: {}
+deploymentAnnotations: {}
+
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 10001
+  runAsGroup: 10001
+  fsGroup: 10001
+  seccompProfile:
+    type: RuntimeDefault
+
+securityContext:
+  allowPrivilegeEscalation: false
+  capabilities:
+    drop:
+      - ALL
+  readOnlyRootFilesystem: true
+  runAsNonRoot: true
+
+service:
+  type: ClusterIP
+  port: 80
+
+ingress:
+  enabled: false
+  className: ""
+  annotations: {}
+  hosts:
+    - host: blockchain-release-watcher.example.com
+      paths:
+        - path: /
+          pathType: Prefix
+  tls: []
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 256Mi
+  limits:
+    cpu: 500m
+    memory: 512Mi
+
+autoscaling:
+  enabled: false
+
+persistence:
+  enabled: true
+  existingClaim: ""
+  storageClass: ""
+  accessModes:
+    - ReadWriteOnce
+  size: 1Gi
+  annotations: {}
+
+config:
+  flaskHost: "0.0.0.0"
+  flaskPort: "5000"
+  databasePath: "/app/data/blockchain_monitor.db"
+  checkIntervalMinutes: "60"
+  monitoredRepos: "ethereum/go-ethereum,bitcoin/bitcoin,cosmos/cosmos-sdk"
+  repoTagFilters: ""
+  gitlabApiBase: "https://gitlab.com/api/v4"
+  smtpHost: "smtp.gmail.com"
+  smtpPort: "587"
+  emailAlertsEnabled: "true"
+  slackAlertsEnabled: "true"
+  jiraBaseUrl: ""
+  jiraProjectKey: "BRW"
+  jiraIssueType: "Task"
+  jiraAlertsEnabled: "false"
+  authRequired: "true"
+
+secret:
+  create: false
+  existingSecret: ""
+  envFrom: false
+  optional: false
+  values:
+    GITHUB_TOKEN: ""
+    GITHUB_WEBHOOK_SECRET: ""
+    API_AUTH_TOKEN: ""
+    GITLAB_TOKEN: ""
+    GEMINI_API_KEY: ""
+    SMTP_USERNAME: ""
+    SMTP_PASSWORD: ""
+    EMAIL_FROM: ""
+    EMAIL_TO: ""
+    SLACK_WEBHOOK_URL: ""
+    JIRA_USER_EMAIL: ""
+    JIRA_API_TOKEN: ""
+
+probes:
+  liveness:
+    initialDelaySeconds: 60
+    periodSeconds: 30
+    timeoutSeconds: 5
+    failureThreshold: 3
+  readiness:
+    initialDelaySeconds: 30
+    periodSeconds: 15
+    timeoutSeconds: 5
+    failureThreshold: 3
+
+command: []
+args: []
+
+extraEnv: []
+extraEnvFrom: []
+extraVolumes: []
+extraVolumeMounts: []
+
+podDisruptionBudget:
+  enabled: false
+  minAvailable: 0
+
+networkPolicy:
+  enabled: false
+  ingress:
+    enabled: true
+    namespaceSelector: {}
+    podSelector: {}
+  egress:
+    allowDns: true
+    allowHttps: true
+    allowSmtp: true
+    extraRules: []
+
+nodeSelector: {}
+tolerations: []
+affinity: {}

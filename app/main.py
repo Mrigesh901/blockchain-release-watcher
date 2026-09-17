@@ -122,13 +122,14 @@ def create_app() -> Flask:
     return app
 
 
+app = create_app()
+
+
 def main():
     """Main application entry point."""
     print("="*60)
     print("Blockchain Release Monitor")
     print("="*60)
-    
-    app = create_app()
     
     print("\n" + "="*60)
     print("Starting Flask server...")
